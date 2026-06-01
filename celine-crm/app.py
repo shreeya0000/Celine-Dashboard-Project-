@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import json
+import os
 
 st.set_page_config(
     page_title="CELINE CRM Intelligence",
@@ -47,21 +48,24 @@ SEGMENT_COLORS = {
     "Lost":       "#D8A8B5",
 }
 
+# Auto-detect file paths
+base = "celine-crm" if os.path.exists("celine-crm/rfm_data.csv") else "."
+
 @st.cache_data
 def load_rfm():
-    return pd.read_csv("rfm_data.csv")
+    return pd.read_csv(f"{base}/rfm_data.csv")
 
 @st.cache_data
 def load_monthly():
-    return pd.read_csv("monthly_revenue.csv")
+    return pd.read_csv(f"{base}/monthly_revenue.csv")
 
 @st.cache_data
 def load_products():
-    return pd.read_csv("top_products.csv")
+    return pd.read_csv(f"{base}/top_products.csv")
 
 @st.cache_data
 def load_kpis():
-    with open("kpis.json") as f:
+    with open(f"{base}/kpis.json") as f:
         return json.load(f)
 
 rfm = load_rfm()
