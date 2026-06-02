@@ -36,6 +36,7 @@ html, body, [class*="css"] { font-family: 'Jost', sans-serif; }
 .rec-card ul { margin: 0; padding-left: 16px; color: #3C3C3C; font-size: 13px; line-height: 2; }
 .rec-card li { margin-bottom: 2px; }
 .thin-divider { border: none; border-top: 1px solid #E2DDD6; margin: 36px 0; }
+.client-result-box { background: white; border: 1px solid #E2DDD6; border-left: 4px solid #A8C5D8; border-radius: 2px; padding: 24px 28px; margin-bottom: 28px; }
 footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
@@ -48,7 +49,6 @@ SEGMENT_COLORS = {
     "Lost":       "#D8A8B5",
 }
 
-# Auto-detect file paths
 base = "celine-crm" if os.path.exists("celine-crm/rfm_data.csv") else "."
 
 @st.cache_data
@@ -85,13 +85,16 @@ champion_rev_pct = round(champion_rev / total_rev * 100, 1)
 peak_month       = monthly.loc[monthly["TotalSpend"].idxmax(), "Month"]
 peak_val         = monthly["TotalSpend"].max()
 
+# ── SIDEBAR ────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("<div style='padding: 24px 0 8px; font-family: Cormorant Garamond, serif; font-size: 22px; letter-spacing: 0.2em; color: #D4C9B8;'>CELINE</div>", unsafe_allow_html=True)
     st.markdown("<div style='font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: #8A7F72; padding-bottom: 20px;'>CRM Intelligence</div>", unsafe_allow_html=True)
     st.markdown("<hr style='border-color: #333; margin-bottom: 20px;'>", unsafe_allow_html=True)
 
+    # CHANGE 1 — Search bar with example IDs below
     st.markdown("<p style='font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#8A7F72;margin-bottom:4px;'>Client Search</p>", unsafe_allow_html=True)
     search_id = st.text_input("", placeholder="Enter Customer ID", label_visibility="collapsed")
+    st.markdown("<p style='font-size:10px;color:#666;letter-spacing:.05em;margin-top:-12px;'>e.g. 14911, 16754, 13047</p>", unsafe_allow_html=True)
 
     st.markdown("<p style='font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#8A7F72;margin:16px 0 4px;'>Segment Filter</p>", unsafe_allow_html=True)
     segments = ["All"] + sorted(rfm["Segment"].unique().tolist())
@@ -101,10 +104,21 @@ with st.sidebar:
     csv_export = rfm.to_csv(index=False).encode("utf-8")
     st.download_button("Download RFM Data", csv_export, "celine_rfm.csv", "text/csv", use_container_width=True)
     st.markdown("<hr style='border-color: #333; margin: 20px 0;'>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size:10px;color:#555;letter-spacing:.08em;'>CRM Analyst Portfolio<br>Built with Python and Streamlit</p>", unsafe_allow_html=True)
+
+    # CHANGE 3 — Name, email, portfolio at bottom of sidebar
+    st.markdown("""
+    <p style='font-size:10px;color:#555;letter-spacing:.08em;margin-bottom:16px;'>CRM Analyst Portfolio<br>Built with Python and Streamlit</p>
+    <div style='border-top:1px solid #333;padding-top:16px;'>
+        <p style='font-size:10px;color:#8A7F72;letter-spacing:0.08em;margin-bottom:2px;text-transform:uppercase;'>Made with love by</p>
+        <p style='font-family:Cormorant Garamond,serif;font-size:16px;color:#D4C9B8;letter-spacing:0.1em;margin-bottom:8px;'>Shreeya Aggarwal</p>
+        <a href='mailto:sa9172@nyu.edu' style='display:block;font-size:10px;color:#8A7F72;letter-spacing:0.06em;margin-bottom:4px;text-decoration:none;'>sa9172@nyu.edu</a>
+        <a href='https://aesthetic-canvas-sparkle.lovable.app' target='_blank' style='display:block;font-size:10px;color:#A8C5D8;letter-spacing:0.06em;text-decoration:none;'>Portfolio</a>
+    </div>
+    """, unsafe_allow_html=True)
 
 rfm_f = rfm[rfm["Segment"] == selected_segment] if selected_segment != "All" else rfm.copy()
 
+# ── HEADER ─────────────────────────────────────────────────
 st.markdown("""
 <div class='brand-header'>
     <div class='brand-name'>CELINE</div>
@@ -112,6 +126,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# CHANGE 2 — Highlighted client result box with scroll
 if search_id:
     try:
         cid = float(search_id)
@@ -120,7 +135,17 @@ if search_id:
             st.warning("No client found with that ID.")
         else:
             row = c_rfm.iloc[0]
-            st.markdown("<div class='section-title'>Client Profile</div><div class='section-sub'>Individual client view</div>", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class='client-result-box' id='client-result'>
+                <div style='font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8A7F72;margin-bottom:8px;font-family:Jost,sans-serif;'>Client Found</div>
+                <div style='font-family:Cormorant Garamond,serif;font-size:28px;font-weight:400;color:#1C1C1C;margin-bottom:4px;'>Customer ID: {search_id}</div>
+            </div>
+            <script>
+                window.addEventListener('load', function() {{
+                    document.getElementById('client-result').scrollIntoView({{behavior: 'smooth'}});
+                }});
+            </script>
+            """, unsafe_allow_html=True)
             cc1, cc2, cc3, cc4 = st.columns(4)
             cc1.metric("Segment", row["Segment"])
             cc2.metric("Days Since Purchase", int(row["Recency"]))
@@ -130,6 +155,7 @@ if search_id:
     except:
         st.warning("Please enter a valid numeric Customer ID.")
 
+# ── EXECUTIVE SUMMARY ──────────────────────────────────────
 st.markdown("<div class='section-title'>Executive Summary</div><div class='section-sub'>Period overview</div>", unsafe_allow_html=True)
 st.markdown(f"""
 <div class='narrative-block'>
@@ -144,6 +170,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+# ── KPIs ───────────────────────────────────────────────────
 st.markdown("<div class='section-title'>Key Performance Indicators</div><div class='section-sub'>Full dataset</div>", unsafe_allow_html=True)
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Total Revenue",   f"£{kpis['total_revenue']:,.0f}")
@@ -153,6 +180,7 @@ k4.metric("Avg Order Value", f"£{kpis['avg_order_value']:,.2f}")
 
 st.markdown("<hr class='thin-divider'>", unsafe_allow_html=True)
 
+# ── SEGMENTATION ───────────────────────────────────────────
 st.markdown("<div class='section-title'>Client Segmentation</div><div class='section-sub'>RFM analysis — recency, frequency, monetary scoring</div>", unsafe_allow_html=True)
 
 ca, cb = st.columns(2)
@@ -207,6 +235,7 @@ st.dataframe(display_rfm, use_container_width=True, height=280)
 
 st.markdown("<hr class='thin-divider'>", unsafe_allow_html=True)
 
+# ── REVENUE TREND ──────────────────────────────────────────
 st.markdown("<div class='section-title'>Revenue Trend</div><div class='section-sub'>Monthly performance across the full period</div>", unsafe_allow_html=True)
 fig3 = px.line(monthly, x="Month", y="TotalSpend",
                title="Monthly Revenue Performance",
@@ -235,6 +264,7 @@ st.markdown(f"""
 
 st.markdown("<hr class='thin-divider'>", unsafe_allow_html=True)
 
+# ── TOP PRODUCTS ───────────────────────────────────────────
 st.markdown("<div class='section-title'>Top Products</div><div class='section-sub'>Ranked by total revenue contribution</div>", unsafe_allow_html=True)
 fig4 = px.bar(products, x="TotalSpend", y="Description", orientation="h",
               title="Top 20 Products by Revenue",
@@ -254,6 +284,7 @@ st.plotly_chart(fig4, use_container_width=True)
 
 st.markdown("<hr class='thin-divider'>", unsafe_allow_html=True)
 
+# ── RECOMMENDATIONS ────────────────────────────────────────
 st.markdown("<div class='section-title'>Strategic Recommendations</div><div class='section-sub'>Actionable priorities derived from RFM analysis</div>", unsafe_allow_html=True)
 
 r1, r2, r3 = st.columns(3)
